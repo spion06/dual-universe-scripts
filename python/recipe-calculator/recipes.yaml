@@ -1,0 +1,166 @@
+# pure from ore
+pure_carbon:
+  made_in: basic_refiner_m
+  produces: 45
+  by_product:
+    pure_hydrogen: 7.5
+    pure_oxygen: 7.5
+  ingredients:
+    coal: 65
+pure_iron:
+  made_in: basic_refiner_m
+  produces: 45
+  by_product:
+    pure_oxygen: 15
+  ingredients:
+    hematite: 65
+pure_aluminum:
+  made_in: basic_refiner_m
+  produces: 45
+  by_product:
+    pure_hydrogen: 15
+  ingredients:
+    bauxite: 65
+pure_silicon:
+  made_in: basic_refiner_m
+  produces: 45
+  by_product:
+    pure_oxygen: 15
+  ingredients:
+    quartz: 65
+
+# product from pure
+steel_product:
+  made_in: basic_smelter_m
+  produces: 10
+  ingredients:
+    pure_iron: 100
+    pure_carbon: 50
+silumin_product:
+  made_in: basic_smelter_m
+  produces: 75
+  ingredients:
+    pure_aluminum: 100
+    pure_silicon: 50
+alfe_alloy_product:
+  made_in: basic_smelter_m
+  produces: 75
+  ingredients:
+    pure_aluminum: 100
+    pure_iron: 50
+polycarbonate_plastic_product:
+  made_in: basic_chemical_industry_m
+  produces: 75
+  ingredients:
+    pure_carbon: 100
+    pure_hydrogen: 50
+
+# intermediate from raw
+basic_connector:
+  made_in: basic_electronics_industry_m
+  produces: 10
+  ingredients:
+    alfe_alloy_product: 10
+basic_pipe:
+  made_in: basic_metalwork_industry_m
+  produces: 10
+  ingredients:
+    silumin_product: 10
+basic_reinforced_frame_m:
+  made_in: basic_metalwork_industry_m
+  produces: 1
+  ingredients:
+    steel_product: 74
+basic_screw:
+  made_in: basic_metalwork_industry_m
+  produces: 10
+  ingredients:
+    steel_product: 10
+basic_component:
+  made_in: basic_metalwork_industry_m
+  produces: 10
+  ingredients:
+    alfe_alloy_product: 10
+
+# intermediate from intermediate
+basic_power_system:
+  made_in: basic_electronics_industry_m
+  produces: 1
+  ingredients:
+    alfe_alloy_product: 6
+    basic_connector: 4
+basic_mobile_panel_m:
+  made_in: basic_metalwork_industry_m
+  produces: 1
+  ingredients:
+    silumin_product: 49
+    basic_screw: 25
+basic_electronics:
+  made_in: basic_electronics_industry_m
+  produces: 1
+  ingredients:
+    polycarbonate_plastic_product: 6
+    basic_component: 4
+basic_chemical_container_m:
+  made_in: basic_metalwork_industry_m
+  produces: 1
+  ingredients:
+    silumin_product: 49
+    basic_screw: 25  
+basic_burner:
+  made_in: basic_metalwork_industry_m
+  produces: 1
+  ingredients:
+    silumin_product: 6
+    basic_screw: 4 
+
+# end products
+
+basic_metalwork_industry_m:
+  made_in: basic_assembly_line_m
+  produces: 1
+  ingredients:
+    basic_pipe: 36
+    basic_power_system: 25
+    basic_mobile_panel_m: 1
+    basic_reinforced_frame_m: 1
+basic_electronics_industry_m:
+  made_in: basic_assembly_line_m
+  produces: 1
+  ingredients:
+    basic_pipe: 36
+    basic_electronics: 25
+    basic_robotic_arm_m: 1
+    basic_reinforced_frame_m: 1
+basic_assembly_line_m:
+  made_in: basic_assembly_line_m
+  produces: 1
+  ingredients:
+    basic_screw: 36
+    basic_power_system: 25
+    basic_mobile_panel_m: 1
+    basic_reinforced_frame_m: 1
+basic_refiner_m:
+  made_in: basic_assembly_line_m
+  produces: 1
+  ingredients:
+    basic_pipe: 36
+    basic_power_system: 25
+    basic_chemical_container_m: 1
+    basic_reinforced_frame_m: 1
+basic_smelter_m:
+  made_in: basic_assembly_line_m
+  produces: 1
+  ingredients:
+    basic_pipe: 36
+    basic_burner: 25
+    basic_chemical_container_m: 1
+    basic_reinforced_frame_m: 1
+basic_chemical_industry_m:
+  made_in: basic_assembly_line_m
+  produces: 1
+  ingredients:
+    basic_pipe: 36
+    basic_power_system: 25
+    basic_chemical_container_m: 1
+    basic_reinforced_frame_m: 1
