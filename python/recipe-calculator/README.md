@@ -14,3 +14,12 @@ pip install -r requirements.txt
 ```
 python create_dot.py [ITEM_NAME]
 ```
+
+## using graphviz
+
+[install graphviz](https://graphviz.org/download/)
+[supported output formats](https://graphviz.org/docs/outputs/)
+
+```
+dot -Tsvc graph.dot
+```
