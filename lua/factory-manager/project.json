@@ -1,0 +1,33 @@
+{
+  "cli": {
+    "fmtVersion": 2
+  },
+  "name": "factory-manager",
+  "description": "script for managing a minimal factory",
+  "sourcePath": "src",
+  "outputPath": "out",
+  "builds": {
+    "main": {
+      "name": "main",
+      "type": "control",
+      "slots": {}
+    },
+    "loadItemDatabank": {
+      "name": "loadItemDatabank",
+      "type": "control",
+      "slots": {}
+    },
+    "factoryQueueManager": {
+      "name": "factoryQueueManager",
+      "type": "control",
+      "slots": {}
+    }
+  },
+  "targets": {
+    "development": {
+      "name": "development",
+      "handleErrors": false,
+      "minify": false
+    }
+  }
+}

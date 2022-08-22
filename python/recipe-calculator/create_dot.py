@@ -26,9 +26,11 @@ def generate_nodes(doc:dict[str,dict]):
     for item, vals in doc.items():
         made_in = vals.get("made_in")
         if made_in:
-            if made_in not in made_in_list:
-                made_in_list[made_in] = []
-            made_in_list[made_in].append(item)
+            production_class = vals.get("production_class", "none")
+            made_in_with_product = f"{made_in}_class_{production_class}"
+            if made_in_with_product not in made_in_list:
+                made_in_list[made_in_with_product] = []
+            made_in_list[made_in_with_product].append([item, made_in])
         nodes.append(item)
         ingredients = vals.get("ingredients", [])
         for ingredient in ingredients:
@@ -42,7 +44,7 @@ def render_nodes():
     for made_in, items in made_in_list.items():
         yield f"node[label=\"build_in_{made_in}\"];"
         for item in items:
-            yield create_made_in_node(item, made_in) + ";"
+            yield create_made_in_node(item[0], item[1]) + ";"
         yield ""
 
 def create_graph_for_item(item, vals):

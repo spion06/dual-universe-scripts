@@ -1,6 +1,7 @@
 # pure from ore
 pure_carbon:
   made_in: basic_refiner_m
+  production_class: pure_from_ore
   produces: 45
   by_product:
     pure_hydrogen: 7.5
@@ -9,6 +10,7 @@ pure_carbon:
     coal: 65
 pure_iron:
   made_in: basic_refiner_m
+  production_class: pure_from_ore
   produces: 45
   by_product:
     pure_oxygen: 15
@@ -16,6 +18,7 @@ pure_iron:
     hematite: 65
 pure_aluminum:
   made_in: basic_refiner_m
+  production_class: pure_from_ore
   produces: 45
   by_product:
     pure_hydrogen: 15
@@ -23,6 +26,7 @@ pure_aluminum:
     bauxite: 65
 pure_silicon:
   made_in: basic_refiner_m
+  production_class: pure_from_ore
   produces: 45
   by_product:
     pure_oxygen: 15
@@ -32,24 +36,28 @@ pure_silicon:
 # product from pure
 steel_product:
   made_in: basic_smelter_m
+  production_class: product_from_pure
   produces: 10
   ingredients:
     pure_iron: 100
     pure_carbon: 50
 silumin_product:
   made_in: basic_smelter_m
+  production_class: product_from_pure
   produces: 75
   ingredients:
     pure_aluminum: 100
     pure_silicon: 50
 alfe_alloy_product:
   made_in: basic_smelter_m
+  production_class: product_from_pure
   produces: 75
   ingredients:
     pure_aluminum: 100
     pure_iron: 50
 polycarbonate_plastic_product:
   made_in: basic_chemical_industry_m
+  production_class: product_from_pure
   produces: 75
   ingredients:
     pure_carbon: 100
@@ -58,26 +66,31 @@ polycarbonate_plastic_product:
 # intermediate from raw
 basic_connector:
   made_in: basic_electronics_industry_m
+  production_class: intermediate_from_product
   produces: 10
   ingredients:
     alfe_alloy_product: 10
 basic_pipe:
   made_in: basic_metalwork_industry_m
+  production_class: intermediate_from_product
   produces: 10
   ingredients:
     silumin_product: 10
 basic_reinforced_frame_m:
   made_in: basic_metalwork_industry_m
+  production_class: intermediate_from_product
   produces: 1
   ingredients:
     steel_product: 74
 basic_screw:
   made_in: basic_metalwork_industry_m
+  production_class: intermediate_from_product
   produces: 10
   ingredients:
     steel_product: 10
 basic_component:
   made_in: basic_metalwork_industry_m
+  production_class: intermediate_from_product
   produces: 10
   ingredients:
     alfe_alloy_product: 10
@@ -85,30 +98,35 @@ basic_component:
 # intermediate from intermediate
 basic_power_system:
   made_in: basic_electronics_industry_m
+  production_class: intermediate_from_intermediate
   produces: 1
   ingredients:
     alfe_alloy_product: 6
     basic_connector: 4
 basic_mobile_panel_m:
   made_in: basic_metalwork_industry_m
+  production_class: intermediate_from_intermediate
   produces: 1
   ingredients:
     silumin_product: 49
     basic_screw: 25
 basic_electronics:
   made_in: basic_electronics_industry_m
+  production_class: intermediate_from_intermediate
   produces: 1
   ingredients:
     polycarbonate_plastic_product: 6
     basic_component: 4
 basic_chemical_container_m:
   made_in: basic_metalwork_industry_m
+  production_class: intermediate_from_intermediate
   produces: 1
   ingredients:
     silumin_product: 49
     basic_screw: 25  
 basic_burner:
   made_in: basic_metalwork_industry_m
+  production_class: intermediate_from_intermediate
   produces: 1
   ingredients:
     silumin_product: 6
@@ -118,6 +136,7 @@ basic_burner:
 
 basic_metalwork_industry_m:
   made_in: basic_assembly_line_m
+  production_class: product
   produces: 1
   ingredients:
     basic_pipe: 36
@@ -126,6 +145,7 @@ basic_metalwork_industry_m:
     basic_reinforced_frame_m: 1
 basic_electronics_industry_m:
   made_in: basic_assembly_line_m
+  production_class: product
   produces: 1
   ingredients:
     basic_pipe: 36
@@ -134,6 +154,7 @@ basic_electronics_industry_m:
     basic_reinforced_frame_m: 1
 basic_assembly_line_m:
   made_in: basic_assembly_line_m
+  production_class: product
   produces: 1
   ingredients:
     basic_screw: 36
@@ -142,6 +163,7 @@ basic_assembly_line_m:
     basic_reinforced_frame_m: 1
 basic_refiner_m:
   made_in: basic_assembly_line_m
+  production_class: product
   produces: 1
   ingredients:
     basic_pipe: 36
@@ -150,6 +172,7 @@ basic_refiner_m:
     basic_reinforced_frame_m: 1
 basic_smelter_m:
   made_in: basic_assembly_line_m
+  production_class: product
   produces: 1
   ingredients:
     basic_pipe: 36
@@ -158,6 +181,7 @@ basic_smelter_m:
     basic_reinforced_frame_m: 1
 basic_chemical_industry_m:
   made_in: basic_assembly_line_m
+  production_class: product
   produces: 1
   ingredients:
     basic_pipe: 36
