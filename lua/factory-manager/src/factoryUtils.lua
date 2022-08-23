@@ -199,6 +199,24 @@ function script.sortByRecipeTime(e1, e2)
     return e1.recipeTime < e2.recipeTime
 end
 
+function script.sortByType(r1, r2)
+    return r1.type < r2.type
+end
+
+function script.pairByType(tbl, sortFunc)
+    local a = {}
+    for id, data in pairs(tbl) do table.insert(a, {type=data.type, id=id}) end
+    table.sort(a, script.sortByType)
+    local i = 0      -- iterator variable
+    local iter = function ()   -- iterator function
+      i = i + 1
+      if a[i] == nil then return nil
+      else return a[i].id, tbl[a[i].id]
+      end
+    end
+    return iter
+  end
+
 function script.searchDatabankKey(localId, reqOrResp)
     return string.format("search_%s_%d", reqOrResp, localId)
 end
@@ -256,7 +274,7 @@ function script.getLowestTierRecipe(recipes)
     return target_recipe
 end
 
-function script.gatherRequiredItems(opt)
+function script.gatherRequiredItemsInner(opt)
     if opt.gathered_items == nil then
         opt.gathered_items = {}
     end
@@ -278,15 +296,74 @@ function script.gatherRequiredItems(opt)
     if opt.gathered_items[opt.itemId] ~= nil then
         opt.gathered_items[opt.itemId].recipeTime = lowestRecipe.time
     end
-    for _, item in ipairs(lowestRecipe.ingredients) do
-        if opt.gathered_items[item.id] == nil then
-            opt.gathered_items[item.id] = { quantity = (item.quantity * opt.qty_needed) }
-        else
-            opt.gathered_items[item.id].quantity = (item.quantity * opt.qty_needed) + opt.gathered_items[item.id].quantity
+
+    local batchSize = 1
+    local batchRatio = nil
+    for _, product in ipairs(lowestRecipe.products) do
+        if product.id == tonumber(opt.itemId) then
+            batchSize = product.quantity
+            batchRatio = opt.qty_needed/product.quantity
         end
-        script.gatherRequiredItems{itemId=item.id,gathered_items=opt.gathered_items,qty_needed=item.quantity}
+    end
+    if batchRatio == nil then
+        error(string.format("failed to find self id `%s` in product list. this shouldn't happen", opt.itemId))
+    end
+
+    opt.gathered_items[opt.itemId].batchSize = batchSize
+
+    for _, item in ipairs(lowestRecipe.ingredients) do
+        local amountNeeded = item.quantity * batchRatio
+        if opt.gathered_items[item.id] == nil then
+            opt.gathered_items[item.id] = { quantity = amountNeeded }
+            -- this is needed to handle ores properly
+            opt.gathered_items[item.id].qtyAlt = {}
+            opt.gathered_items[item.id].qtyAlt[opt.itemId] = {amount_needed=amountNeeded, inputBatch = item.quantity}
+        else
+            opt.gathered_items[item.id].quantity = amountNeeded + opt.gathered_items[item.id].quantity
+
+            -- this section is needed to handle ores properly
+            if opt.gathered_items[item.id].qtyAlt[opt.itemId] == nil then
+                opt.gathered_items[item.id].qtyAlt[opt.itemId] = {amount_needed=amountNeeded, inputBatch = item.quantity}
+            else
+                opt.gathered_items[item.id].qtyAlt[opt.itemId].amount_needed = opt.gathered_items[item.id].qtyAlt[opt.itemId].amount_needed + amountNeeded
+            end
+        end
+        script.gatherRequiredItemsInner{itemId=item.id,gathered_items=opt.gathered_items,qty_needed=amountNeeded}
     end
     return opt.gathered_items
+end
+
+function script.gatherRequiredItems(opt)
+    local gathered_items = script.gatherRequiredItemsInner(opt)
+    for itemId, data in pairs(gathered_items) do
+        -- ores don't have a batchSize and instead qty needs to be calulated based off the input requirements of the parent recipe
+        -- this is because there is no recipe to "build" an ore.
+        if data.batchSize == nil then
+            local amountNeeded = 0
+            for _, sdata in pairs(data.qtyAlt) do
+                local remainder = sdata.amount_needed
+                if remainder > sdata.inputBatch then
+                    remainder = sdata.amount_needed % sdata.inputBatch
+                end
+                amountNeeded = amountNeeded + sdata.amount_needed + (sdata.inputBatch - remainder)
+            end
+            opt.gathered_items[itemId].quantity = amountNeeded
+            opt.gathered_items[itemId].qtyAlt = nil
+            goto continue
+        end
+        opt.gathered_items[itemId].qtyAlt = nil
+        local remainder = data.quantity
+        if remainder > data.batchSize then
+            remainder = data.quantity % data.batchSize
+        end
+        if remainder ~= 0 then
+            local batchFillQty = data.batchSize - remainder
+            opt.gathered_items[itemId].quantity = data.quantity + batchFillQty
+        end
+        ::continue::
+    end
+
+    return gathered_items
 end
 
 return script

@@ -170,7 +170,12 @@ function program.programFactories()
             for itemId, buildInfo in pairs(assignments) do
                 local quantity = buildInfo.queueItem.quantity
                 local startFunction = "startMaintain"
+                local perMachineIdxQty = {}
+                for _, _ in ipairs(buildInfo.factories) do
+                    table.insert(perMachineIdxQty, 0)
+                end
                 if string.match(buildMode, "singleBatch") then
+                    all_should_shutdown = {true} -- force the shutdown in batch mode on this run to prevent assignments from running again
                     startFunction = "startFor"
                     local recipe = factoryUtils.getLowestTierRecipe(system.getRecipes(itemId))
                     local batchQty = 0
@@ -184,13 +189,27 @@ function program.programFactories()
                         error(string.format("could not find product on recipe for itemId %s. this shouldn't happen", itemId))
                     end
                     local batches = math.ceil(buildInfo.queueItem.quantity/batchQty)
+                    local factoryCnt = factoryUtils.tableLenth(perMachineIdxQty)
+                    for i=1, batches do
+                        local perMachineIdx = (i % factoryCnt) + 1
+                        perMachineIdxQty[perMachineIdx] = perMachineIdxQty[perMachineIdx] + 1
+                    end
                     quantity = math.ceil(batches/factoryUtils.tableLenth(buildInfo.factories))
+                else
+                    for idx, _ in ipairs(buildInfo.factories) do
+                        perMachineIdxQty[idx] = quantity
+                    end
                 end
 
-                for _, factory in ipairs(buildInfo.factories) do
+                for idx, factory in ipairs(buildInfo.factories) do
+                    local buildQty = perMachineIdxQty[idx]
+                    if buildQty == 0 then
+                        goto continue
+                    end
                     factory.setOutput(itemId)
-                    factory[startFunction](quantity)
+                    factory[startFunction](buildQty)
                     system.print(string.format("started production for itemId %s on factory %s localId %d", itemId, factory.getName(), factory.getLocalId()))
+                    ::continue::
                 end
                 table.insert(program.currentQueue[queueKey].inProgress, itemId)
             end

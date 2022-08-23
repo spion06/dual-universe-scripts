@@ -4,7 +4,7 @@ local displayUtils = require 'displayUtils'
 --
 
 getRecipeFor = "basic Assembly Line M"
-makeQty = 10
+makeQty = 1
 sortedNeededIds = nil
 gatheredData = {}
 neededInputs = nil
@@ -78,21 +78,26 @@ function program.getInputsNeeded()
         table.insert(facotryQueues[factoryName], {itemId = itemId, quantity = itemInfo.quantity, recipeTime = itemInfo.recipeTime, factoryType = factoryName})
     end
 
+    local ranPrintOnce = false
     for _, factoryDatabank in ipairs(factoryUtils.getDatabanksForFactories()) do
         system.print(string.format("clearing existing queue for databank %s", factoryDatabank.getName()))
         factoryDatabank.clear()
         for factoryName, factoryReq in pairs(facotryQueues) do
-            system.print(string.format("setting up factory queues for factory type %s", factoryName))
+            if not ranPrintOnce then
+                system.print(string.format("setting up factory queues for factory type %s", factoryName))
+            end
             factoryUtils.queueFactoryRequest(factoryDatabank, factoryName, factoryReq)
         end
+        ranPrintOnce = true
     end
 
     local screens = library.getLinksByClass('ScreenUnit', true)
     if not factoryUtils.isTableEmpty(screens) then
+        system.print("found attached screen. displaying recipe information")
         local tbl = {}
-        for itemId, data in pairs(gatheredData) do
+        for itemId, data in factoryUtils.pairByType(gatheredData) do
             local itemInfo = system.getItem(itemId)
-            table.insert(tbl, {itemInfo.displayNameWithSize, data.quantity})
+            table.insert(tbl, {itemInfo.displayNameWithSize, string.format("%.2f", data.quantity)})
         end
         displayUtils.writeOutputToScreens(tbl, screens)
     end
