@@ -17,11 +17,24 @@ for itemName, vals in pairs(duFactoryGenerator) do
         table.insert(skipped, itemName)
         goto continue
     end
+    local inputs = {}
+    for inputName, inputQty in pairs(vals.input) do
+        local hypItem = allItems.findByFullName(inputName)
+        if hypItem[2] == nil then
+            inputs = {}
+            print(string.format("could not find input name %s. not outputting any inputs for %s", inputName, itemName))
+            break
+        end
+        inputs[hypItem[2].NqId] = inputQty
+    end
     local itemId = schematicInfo.NqId
     bigboi[itemId] = {
       industry = vals.industry,
-      industryIdsLike = allItems.matchByNameEndsWith(vals.industry),
+      --industryIdsLike = allItems.matchByNameEndsWith(vals.industry),
+      inputs = inputs,
       itemShort = shortName,
+      producedQty = vals.outputQuantity,
+      createTime = vals.time,
       type = vals.type,
       id = tonumber(itemId),
       itemLong = schematicInfo.FullName

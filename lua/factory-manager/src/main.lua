@@ -8,6 +8,7 @@ makeQty = 1
 sortedNeededIds = nil
 gatheredData = {}
 neededInputs = nil
+primaryItemId = nil
 
 local program = {}
 
@@ -33,8 +34,10 @@ function program.getInputsNeeded()
             system.print(string.format("search result failed. result: %s", json.encode(result)))
             unit.exit()
         end
-        neededInputs = factoryUtils.gatherRequiredItems{itemId=result.data.id, qty_needed=makeQty}
+        primaryItemId = result.data.id
+        neededInputs = factoryUtils.gatherRequiredItems{itemId=result.data.id}
     end
+    
     if sortedNeededIds == nil then
         sortedNeededIds = {}
         for itemId, itemInfo in pairs(neededInputs) do
@@ -60,7 +63,11 @@ function program.getInputsNeeded()
             gatheredData[itemId] = result.data
         end
     end
-    system.print(string.format("found all required information for %s", getRecipeFor))
+    system.print(string.format("found all required items for %s", getRecipeFor))
+
+    factoryUtils.populateQty(primaryItemId, makeQty, gatheredData)
+
+    system.print(string.format("populated all needed data for %s", getRecipeFor))
 
     local facotryQueues = {}
     for itemId, itemInfo in pairs(gatheredData) do
@@ -75,7 +82,7 @@ function program.getInputsNeeded()
             facotryQueues[factoryName] = {
             }
         end
-        table.insert(facotryQueues[factoryName], {itemId = itemId, quantity = itemInfo.quantity, recipeTime = itemInfo.recipeTime, factoryType = factoryName})
+        table.insert(facotryQueues[factoryName], {itemId = itemId, quantity = itemInfo.quantity, recipeTime = itemInfo.createTime, factoryType = factoryName, batchSize = itemInfo.producedQty, numBatches = itemInfo.numBatches})
     end
 
     local ranPrintOnce = false

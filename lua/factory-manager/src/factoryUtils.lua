@@ -137,7 +137,7 @@ end
 
 
 function script.isTableEmpty(tbl)
-    for _, _ in ipairs(tbl) do
+    for _, _ in pairs(tbl) do
         return false
     end
     return true
@@ -145,7 +145,7 @@ end
 
 function script.tableLenth(tbl)
     local tableLenth = 0
-    for _, _ in ipairs(tbl) do
+    for _, _ in pairs(tbl) do
         tableLenth = tableLenth + 1
     end
     return tableLenth
@@ -274,12 +274,17 @@ function script.getLowestTierRecipe(recipes)
     return target_recipe
 end
 
-function script.gatherRequiredItemsInner(opt)
+--[[ 
+    this function simply gathers all required item ids and initalizes the object.
+    this is only needed becuase searching has to happen separately and the recipes from the in-game api do not reliabily give the ingredients for use in a factory.
+    may items only have recipes for the nanopack recipe which is NOT what this script is intended to calculate
+]]--
+function script.gatherRequiredItems(opt)
     if opt.gathered_items == nil then
         opt.gathered_items = {}
     end
-    if opt.qty_needed == nil then
-        opt.qty_needed = 1
+    if opt.gathered_items[opt.itemId] == nil then
+        opt.gathered_items[opt.itemId] = { }
     end
     local recipes = system.getRecipes(opt.itemId)
     if recipes[1] == nil then
@@ -287,54 +292,65 @@ function script.gatherRequiredItemsInner(opt)
     end
     local lowestRecipe = script.getLowestTierRecipe(recipes)
 
-    -- this handles the parent item case where gathered_items isn't filled out because it's the first
-    if opt.gathered_items[opt.itemId] == nil then
-        opt.gathered_items[opt.itemId] = { quantity = opt.qty_needed }
-    end
-
-    -- this handles cases for ingredients during recursive calls and for the parent
-    if opt.gathered_items[opt.itemId] ~= nil then
-        opt.gathered_items[opt.itemId].recipeTime = lowestRecipe.time
-    end
-
-    local batchSize = 1
-    local batchRatio = nil
-    for _, product in ipairs(lowestRecipe.products) do
-        if product.id == tonumber(opt.itemId) then
-            batchSize = product.quantity
-            batchRatio = opt.qty_needed/product.quantity
-        end
-    end
-    if batchRatio == nil then
-        error(string.format("failed to find self id `%s` in product list. this shouldn't happen", opt.itemId))
-    end
-
-    opt.gathered_items[opt.itemId].batchSize = batchSize
-
     for _, item in ipairs(lowestRecipe.ingredients) do
-        local amountNeeded = item.quantity * batchRatio
-        if opt.gathered_items[item.id] == nil then
-            opt.gathered_items[item.id] = { quantity = amountNeeded }
-            -- this is needed to handle ores properly
-            opt.gathered_items[item.id].qtyAlt = {}
-            opt.gathered_items[item.id].qtyAlt[opt.itemId] = {amount_needed=amountNeeded, inputBatch = item.quantity}
-        else
-            opt.gathered_items[item.id].quantity = amountNeeded + opt.gathered_items[item.id].quantity
-
-            -- this section is needed to handle ores properly
-            if opt.gathered_items[item.id].qtyAlt[opt.itemId] == nil then
-                opt.gathered_items[item.id].qtyAlt[opt.itemId] = {amount_needed=amountNeeded, inputBatch = item.quantity}
-            else
-                opt.gathered_items[item.id].qtyAlt[opt.itemId].amount_needed = opt.gathered_items[item.id].qtyAlt[opt.itemId].amount_needed + amountNeeded
-            end
-        end
-        script.gatherRequiredItemsInner{itemId=item.id,gathered_items=opt.gathered_items,qty_needed=amountNeeded}
+        script.gatherRequiredItems{itemId=item.id,gathered_items=opt.gathered_items}
     end
     return opt.gathered_items
 end
 
-function script.gatherRequiredItems(opt)
-    local gathered_items = script.gatherRequiredItemsInner(opt)
+-- tables are passed by reference so pass the table to modify as second arg
+-- this function assumes all the required items are already populated as table keys from gatherRequiredItems
+function script.populateQtyInner(itemId, qty_needed, gathered_items)
+    if gathered_items == nil then
+        error("gathered_items is a required input")
+    end
+    if qty_needed == nil then
+        qty_needed = 1
+    end
+    local ingredients = gathered_items[itemId].inputs
+    if script.isTableEmpty(ingredients) then
+        return gathered_items
+    end
+    
+    -- this handles the parent item case where gathered_items isn't filled out because it's the first
+    if gathered_items[itemId].quantity == nil then
+        gathered_items[itemId].quantity = qty_needed
+    end
+    --local quantity = gathered_items[itemId].quantity
+
+    local batchSize = gathered_items[itemId].producedQty
+    if batchSize == nil then
+        error(string.format("failed to find self id `%s` in product list. this shouldn't happen", itemId))
+    end
+    local batchRatio = qty_needed/batchSize
+
+    gathered_items[itemId].batchSize = batchSize
+
+    for inputId, inputQty in pairs(ingredients) do
+        inputId = tonumber(inputId)
+        local amountNeeded = inputQty * batchRatio
+        if gathered_items[inputId].quantity == nil then
+            gathered_items[inputId].quantity = amountNeeded
+            -- this is needed to handle ores properly
+            gathered_items[inputId].qtyAlt = {}
+            gathered_items[inputId].qtyAlt[itemId] = {amount_needed=amountNeeded, inputBatch = inputQty}
+        else
+            gathered_items[inputId].quantity = amountNeeded + gathered_items[inputId].quantity
+
+            -- this section is needed to handle ores properly
+            if gathered_items[inputId].qtyAlt[itemId] == nil then
+                gathered_items[inputId].qtyAlt[itemId] = {amount_needed=amountNeeded, inputBatch = inputQty}
+            else
+                gathered_items[inputId].qtyAlt[itemId].amount_needed = gathered_items[inputId].qtyAlt[itemId].amount_needed + amountNeeded
+            end
+        end
+        script.populateQtyInner(inputId, amountNeeded, gathered_items)
+    end
+    return gathered_items
+end
+
+function script.populateQty(itemId, qty_needed, gathered_items)
+    local gathered_items = script.populateQtyInner(itemId, qty_needed, gathered_items)
     for itemId, data in pairs(gathered_items) do
         -- ores don't have a batchSize and instead qty needs to be calulated based off the input requirements of the parent recipe
         -- this is because there is no recipe to "build" an ore.
@@ -347,19 +363,21 @@ function script.gatherRequiredItems(opt)
                 end
                 amountNeeded = amountNeeded + sdata.amount_needed + (sdata.inputBatch - remainder)
             end
-            opt.gathered_items[itemId].quantity = amountNeeded
-            opt.gathered_items[itemId].qtyAlt = nil
+            gathered_items[itemId].quantity = amountNeeded
+            gathered_items[itemId].qtyAlt = nil
             goto continue
         end
-        opt.gathered_items[itemId].qtyAlt = nil
+        gathered_items[itemId].qtyAlt = nil
         local remainder = data.quantity
         if remainder > data.batchSize then
             remainder = data.quantity % data.batchSize
         end
         if remainder ~= 0 then
             local batchFillQty = data.batchSize - remainder
-            opt.gathered_items[itemId].quantity = data.quantity + batchFillQty
+            local totalQty = data.quantity + batchFillQty
+            gathered_items[itemId].quantity = totalQty
         end
+        gathered_items[itemId].numBatches = gathered_items[itemId].quantity/data.batchSize
         ::continue::
     end
 

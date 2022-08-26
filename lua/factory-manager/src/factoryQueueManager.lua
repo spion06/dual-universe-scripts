@@ -67,9 +67,7 @@ function program.programFactories()
         local should_shutdown = false
         local validItemIds = {}
         local queuedItems = {}
-        local l_forceRefreshFactories = forceRefreshFactories
-        local l_forceRefreshValidIdx = forceRefreshValidIdx
-        
+        local l_forceRefreshFactories = forceRefreshFactories        
 
         for _, queueItem in ipairs(queueInfo.queue) do
             table.insert(validItemIds, queueItem.itemId)
@@ -99,14 +97,13 @@ function program.programFactories()
         local validQueueIndexes = {}
 
         if continue_next_run then
-            forceRefreshFactories = false
             goto outercontinue
         end
 
         table.sort(queueInfo.queue, factoryUtils.sortByRecipeTime)
         
         -- check for any items we've already queued 
-        validQueueIndexes = program.buildValidQueueIdxs(queueInfo, currentInProgress, l_forceRefreshValidIdx)
+        validQueueIndexes = program.buildValidQueueIdxs(queueInfo, currentInProgress, forceRefreshValidIdx)
 
         if factoryUtils.tableLenth(validQueueIndexes) < numberOfAvailableFactories and factoryUtils.array_has_value({"maintain"}, buildMode) then
             should_shutdown = true
@@ -164,6 +161,15 @@ function program.programFactories()
         table.insert(all_should_shutdown, should_shutdown)
     end
 
+    if continue_next_run then
+        forceRefreshFactories = false
+        goto skipforcerefresh
+    end
+    if forceRefreshValidIdx then
+        forceRefreshValidIdx = false
+    end
+    ::skipforcerefresh::
+
     if should_startup_factories then
         system.print("assigning recipes to factories")
         for queueKey, assignments in pairs(buildAssignments) do
@@ -177,18 +183,14 @@ function program.programFactories()
                 if string.match(buildMode, "singleBatch") then
                     all_should_shutdown = {true} -- force the shutdown in batch mode on this run to prevent assignments from running again
                     startFunction = "startFor"
-                    local recipe = factoryUtils.getLowestTierRecipe(system.getRecipes(itemId))
-                    local batchQty = 0
-                    for _, product in ipairs(recipe.products) do
-                        if product.id == tonumber(itemId) then
-                            batchQty = product.quantity
-                        end
+                    local batches = 0
+                    if buildInfo.queueItem.numBatches then
+                        batches = buildInfo.queueItem.numBatches
                     end
 
-                    if batchQty == 0 then
-                        error(string.format("could not find product on recipe for itemId %s. this shouldn't happen", itemId))
+                    if batches == 0 then
+                        error(string.format("could not find target batches for %s. this shouldn't happen", itemId))
                     end
-                    local batches = math.ceil(buildInfo.queueItem.quantity/batchQty)
                     local factoryCnt = factoryUtils.tableLenth(perMachineIdxQty)
                     for i=1, batches do
                         local perMachineIdx = (i % factoryCnt) + 1
