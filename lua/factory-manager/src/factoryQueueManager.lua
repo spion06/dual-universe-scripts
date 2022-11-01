@@ -146,15 +146,17 @@ function program.programFactories()
             goto outercontinue
         end
 
-        for _, queueItem in ipairs(queueInfo.queue) do
-            local idleFactory = table.remove(idleFactories, 1)
-            if idleFactory == nil then
-                system.print(string.format("no idle factories available for making %d", queueItem.itemId))
-                break
+        while (factoryUtils.tableLenth(idleFactories) > 0) do
+            for _, queueItem in ipairs(queueInfo.queue) do
+                local idleFactory = table.remove(idleFactories, 1)
+                if idleFactory == nil then
+                    system.print(string.format("no idle factories available for making %d", queueItem.itemId))
+                    break
+                end
+                buildAssignments[queueKey] = program.addFactoryAssignment(buildAssignments[queueKey], queueItem, idleFactory)
+                --idleFactory.setOutput(queueItem.itemId)
+                --idleFactory.startMaintain(queueItem.quantity)
             end
-            buildAssignments[queueKey] = program.addFactoryAssignment(buildAssignments[queueKey], queueItem, idleFactory)
-            --idleFactory.setOutput(queueItem.itemId)
-            --idleFactory.startMaintain(queueItem.quantity)
         end
 
         ::outercontinue::

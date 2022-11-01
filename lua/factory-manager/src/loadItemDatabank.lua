@@ -73,7 +73,7 @@ function program.searchByName(searchReq)
     local message = string.format("could not find item by name `%s`", searchFor)
     local data = nil
     for key, vals in pairs(mergedRecipeInfo) do
-        if string.match(vals.itemLong, searchFor) then
+        if string.lower(vals.itemLong) == string.lower(searchFor) then
             data = vals
             message = "found matching item"
             break

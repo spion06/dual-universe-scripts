@@ -3,17 +3,18 @@ local factoryUtils = require 'factoryUtils'
 local displayUtils = require 'displayUtils'
 --
 
-getRecipeFor = "basic Assembly Line M"
-makeQty = 1
+getRecipeFor = "basic Assembly Line M" --export: what element/item to generate recipe list + queues for
+makeQty = 1 --export: how many items should be made
 sortedNeededIds = nil
 gatheredData = {}
-neededInputs = nil
+neededInputs = {}
+ingredientsToSearch = {}
 primaryItemId = nil
 
 local program = {}
 
 function program.init()
-    program.storage_databank = factoryUtils.getMainStorage()
+    program.storage_databank = factoryUtils.getMainStorage() --@type CoreUnit
 end
 
 function program.timerImpl(self, timerId)
@@ -23,7 +24,7 @@ function program.timerImpl(self, timerId)
 end
 
 function program.getInputsNeeded()
-    if neededInputs == nil then
+    if factoryUtils.isTableEmpty(neededInputs) then
         local result = factoryUtils.retreiveSearchResult(program.storage_databank, unit)
         if result == nil then
             factoryUtils.queueSearch(program.storage_databank, unit, "searchByName", getRecipeFor)
@@ -35,7 +36,23 @@ function program.getInputsNeeded()
             unit.exit()
         end
         primaryItemId = result.data.id
-        neededInputs = factoryUtils.gatherRequiredItems{itemId=result.data.id}
+        table.insert(ingredientsToSearch, primaryItemId)
+        neededInputs = factoryUtils.gatherRequiredItems{itemId=result.data.id}.gathered_items
+    end
+
+    if not factoryUtils.isTableEmpty(ingredientsToSearch) then
+        local itemId = table.remove(ingredientsToSearch, 1)
+        system.print(string.format("getting ingredients for %d", itemId))
+        local result = factoryUtils.gatherRequiredItems{itemId=itemId, recursive=false, gathered_items=neededInputs}
+        if factoryUtils.isTableEmpty(result.ingredient_itemids) then
+            return false
+        end
+        for _, ingredientItemId in ipairs(result.ingredient_itemids) do
+            if not factoryUtils.tableHasKey(neededInputs, ingredientItemId) then
+                table.insert(ingredientsToSearch, ingredientItemId)
+            end
+        end
+        return false
     end
     
     if sortedNeededIds == nil then

@@ -32,6 +32,21 @@ script.FACTORY_NAMES = {
         complex_name = "chemical",
         product_name = "chemical",
         matchName = "Chemical Industry"
+    },
+    GLASS_FURNACE = {
+        complex_name = "glass_furnace",
+        product_name = "glass_furnace",
+        matchName = "Glass Furnace"
+    },
+    RECYCLER = {
+        complex_name = "recycler",
+        product_name = "recycler",
+        matchName = "Recycler"
+    },
+    THREE_D_PRINTER = {
+        complex_name = "recycler",
+        product_name = "recycler",
+        matchName = "3D Printer"
     }
 }
 
@@ -115,7 +130,7 @@ function script.getMainStorage()
     if storage_databank == nil then
         error("could not find databank named main_storage")
     end
-    return storage_databank
+    return storage_databank --@type DataBank
 end
 
 function script.getLinkByNameAndClass(linkClass, elementName)
@@ -131,6 +146,15 @@ function script.array_has_value(tbl, val)
         if value == val then
             return true
         end
+    end
+    return false
+end
+
+function script.tableHasKey(tbl, key)
+    for ikey, _ in pairs(tbl) do
+        if key == ikey then
+            return true
+        end 
     end
     return false
 end
@@ -287,15 +311,29 @@ function script.gatherRequiredItems(opt)
         opt.gathered_items[opt.itemId] = { }
     end
     local recipes = system.getRecipes(opt.itemId)
-    if recipes[1] == nil then
-        return opt.gathered_items
-    end
-    local lowestRecipe = script.getLowestTierRecipe(recipes)
 
-    for _, item in ipairs(lowestRecipe.ingredients) do
-        script.gatherRequiredItems{itemId=item.id,gathered_items=opt.gathered_items}
+    if opt.recursive then
+        if recipes[1] == nil then
+            return opt.gathered_items
+        end
+        local lowestRecipe = script.getLowestTierRecipe(recipes)
+        for _, item in ipairs(lowestRecipe.ingredients) do
+            script.gatherRequiredItems{itemId=item.id,gathered_items=opt.gathered_items}
+        end
+        return opt.gathered_items
+    else
+        local ret = {}
+        ret.gathered_items = opt.gathered_items
+        ret.ingredient_itemids = {}
+        if recipes[1] == nil then
+            return ret
+        end
+        local lowestRecipe = script.getLowestTierRecipe(recipes)
+        for _, item in ipairs(lowestRecipe.ingredients) do
+            table.insert(ret.ingredient_itemids, item.id)
+        end
+        return ret
     end
-    return opt.gathered_items
 end
 
 -- tables are passed by reference so pass the table to modify as second arg
